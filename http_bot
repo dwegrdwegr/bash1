@@ -1,0 +1,27 @@
+#!/bin/bash
+function contains ()
+{
+	for e in "${@:2}"; do [[ "$e" == "$1" ]] && return 0; done
+	return 1
+}
+mkdir $2
+cd $2
+queue=( $1 )
+for (( i = 0; i < $3; i++ ))
+do
+	for (( j = 0; j < ${#queue[@]}; j++ ))
+	do
+		if contains "${queue[j]}" "${checked[@]}"
+		then
+			continue
+		fi
+		wget -q "${queue[j]}" # download the specified page
+		last_added=$( ls -t | head -n 1 ) # get the name of last added page for grep
+		temporary_array=( $(grep -oE '<a .*href=\"[^#"]+\"' $last_added | sed -n 's/.*href="\([^"]*\).*/\1/p') ) #retrieve links
+        	temporary_array=( "${temporary_array[@]/#'/'/"${queue[j]}/"}" ) # change all relative links to full non-relative
+		pre_queue=( "${pre_queue[@]}" "${temporary_array[@]}" )
+	done
+	checked=( "${checked[@]}" "${queue[@]}" )
+	queue=( "${pre_queue[@]}" )
+
+done
